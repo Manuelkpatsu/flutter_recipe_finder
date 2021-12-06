@@ -1,3 +1,4 @@
+import 'package:flutterrecipefinder/data/models/ingredient.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'recipe_model.g.dart';
@@ -91,4 +92,12 @@ String getWeight(double? weight) {
     return '0g';
   }
   return weight.floor().toString() + 'g';
+}
+
+List<Ingredient> convertIngredients(List<APIIngredients> apiIngredients) {
+  final ingredients = <Ingredient>[];
+  for (var ingredient in apiIngredients) {
+    ingredients.add(Ingredient(name: ingredient.name, weight: ingredient.weight));
+  }
+  return ingredients;
 }
