@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutterrecipefinder/data/memory_repository.dart';
+import 'package:flutterrecipefinder/data/models/ingredient.dart';
+import 'package:flutterrecipefinder/data/repository.dart';
 import 'package:provider/provider.dart';
 
 class ShoppingList extends StatefulWidget {
   const ShoppingList({Key? key}) : super(key: key);
 
-  // TODO 1
   @override
   State<ShoppingList> createState() => _ShoppingListState();
 }
@@ -15,23 +15,33 @@ class _ShoppingListState extends State<ShoppingList> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MemoryRepository>(builder: (context, repository, child) {
-      final ingredients = repository.findAllIngredients();
-      return ListView.builder(
-          itemCount: ingredients.length,
-          itemBuilder: (BuildContext context, int index) {
-            return CheckboxListTile(
-              value: checkBoxValues.containsKey(index) && checkBoxValues[index]!,
-              title: Text(ingredients[index].name ?? ''),
-              onChanged: (newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    checkBoxValues[index] = newValue;
-                  });
-                }
-              },
-            );
-          });
-    });
+    final repository = Provider.of<Repository>(context);
+    return StreamBuilder(
+        stream: repository.watchAllIngredients(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            final ingredients = snapshot.data as List<Ingredient>?;
+            if (ingredients == null) {
+              return Container();
+            }
+            return ListView.builder(
+                itemCount: ingredients.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return CheckboxListTile(
+                    value: checkBoxValues.containsKey(index) && checkBoxValues[index]!,
+                    title: Text(ingredients[index].name ?? ''),
+                    onChanged: (newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          checkBoxValues[index] = newValue;
+                        });
+                      }
+                    },
+                  );
+                });
+          } else {
+            return Container();
+          }
+        });
   }
 }

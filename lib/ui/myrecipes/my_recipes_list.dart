@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:flutterrecipefinder/data/memory_repository.dart';
 import 'package:flutterrecipefinder/data/models/recipe.dart';
+import 'package:flutterrecipefinder/data/repository.dart';
 import 'package:provider/provider.dart';
 
 class MyRecipesList extends StatefulWidget {
@@ -24,72 +24,80 @@ class _MyRecipesListState extends State<MyRecipesList> {
   }
 
   Widget _buildRecipeList(BuildContext context) {
-    return Consumer<MemoryRepository>(builder: (context, repository, child) {
-      recipes = repository.findAllRecipes();
-      return ListView.builder(
-          itemCount: recipes.length,
-          itemBuilder: (BuildContext context, int index) {
-            final recipe = recipes[index];
+    final repository = Provider.of<Repository>(context, listen: false);
 
-            return SizedBox(
-              height: 100,
-              child: Slidable(
-                child: Card(
-                  elevation: 1.0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                  color: Colors.white,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ListTile(
-                        leading: CachedNetworkImage(
-                            imageUrl: recipe.image ?? '',
-                            height: 120,
-                            width: 60,
-                            fit: BoxFit.cover),
-                        title: Text(recipe.label ?? ''),
+    return StreamBuilder<List<Recipe>>(
+        stream: repository.watchAllRecipes(),
+        builder: (context, AsyncSnapshot<List<Recipe>> snapshot) {
+          if (snapshot.connectionState == ConnectionState.active) {
+            final recipes = snapshot.data ?? [];
+            return ListView.builder(
+                itemCount: recipes.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final recipe = recipes[index];
+
+                  return SizedBox(
+                    height: 100,
+                    child: Slidable(
+                      child: Card(
+                        elevation: 1.0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        color: Colors.white,
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              leading: CachedNetworkImage(
+                                  imageUrl: recipe.image ?? '',
+                                  height: 120,
+                                  width: 60,
+                                  fit: BoxFit.cover),
+                              title: Text(recipe.label ?? ''),
+                            ),
+                          ),
+                        ),
+                      ),
+                      startActionPane: ActionPane(
+                        motion: const ScrollMotion(),
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              deleteRecipe(repository, recipe);
+                            },
+                            foregroundColor: Colors.black,
+                            icon: Icons.delete,
+                            label: 'Delete',
+                            backgroundColor: Colors.transparent,
+                          )
+                        ],
+                      ),
+                      endActionPane: ActionPane(
+                        motion: const ScrollMotion(),
+                        children: [
+                          SlidableAction(
+                            onPressed: (context) {
+                              deleteRecipe(repository, recipe);
+                            },
+                            foregroundColor: Colors.black,
+                            icon: Icons.delete,
+                            label: 'Delete',
+                            backgroundColor: Colors.transparent,
+                          )
+                        ],
                       ),
                     ),
-                  ),
-                ),
-                startActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  children: [
-                    SlidableAction(
-                      onPressed: (context) {
-                        deleteRecipe(repository, recipe);
-                      },
-                      foregroundColor: Colors.black,
-                      icon: Icons.delete,
-                      label: 'Delete',
-                      backgroundColor: Colors.transparent,
-                    )
-                  ],
-                ),
-                endActionPane: ActionPane(
-                  motion: const ScrollMotion(),
-                  children: [
-                    SlidableAction(
-                      onPressed: (context) {
-                        deleteRecipe(repository, recipe);
-                      },
-                      foregroundColor: Colors.black,
-                      icon: Icons.delete,
-                      label: 'Delete',
-                      backgroundColor: Colors.transparent,
-                    )
-                  ],
-                ),
-              ),
-            );
-          });
-    });
+                  );
+                });
+          } else {
+            return Container();
+          }
+        });
   }
 
-  void deleteRecipe(MemoryRepository repository, Recipe recipe) async {
+  void deleteRecipe(Repository repository, Recipe recipe) async {
     if (recipe.id != null) {
       repository.deleteRecipeIngredients(recipe.id!);
       repository.deleteRecipe(recipe);
